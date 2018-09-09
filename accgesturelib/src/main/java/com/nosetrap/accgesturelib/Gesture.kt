@@ -41,7 +41,7 @@ class Gesture(private val accService: AccessibilityService) {
 
         p.moveTo(from.x.toFloat(), from.y.toFloat())
         p.lineTo(to.x.toFloat(), to.y.toFloat())
-        builder.addStroke(GestureDescription.StrokeDescription(p, 10, scrollDuration))
+        builder.addStroke(GestureDescription.StrokeDescription(p, 0, scrollDuration))
 
         val gesture = builder.build()
 
