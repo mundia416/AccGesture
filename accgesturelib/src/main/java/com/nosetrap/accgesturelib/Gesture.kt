@@ -17,19 +17,9 @@ class Gesture(private val accService: AccessibilityService) {
      * time the stroke should start. Must not be negative.
      * @return true of gesture has been performed else false
      */
-    fun click(point: Point,strokeStartTime: Long = 10,gestureResultCallback: AccessibilityService.GestureResultCallback =
-            object : AccessibilityService.GestureResultCallback() {}): Boolean {
-        val builder = GestureDescription.Builder()
-        val p = Path()
-
-        p.moveTo(point.x.toFloat(), point.y.toFloat())
-        p.lineTo(point.x.toFloat(), point.y.toFloat())
-        builder.addStroke(GestureDescription.StrokeDescription(p, strokeStartTime, 200))
-
-        val gesture = builder.build()
-
-        return performGesture(gesture,gestureResultCallback)
-
+    fun click(point: Point,strokeStartTime: Long = 10,
+              gestureResultCallback: AccessibilityService.GestureResultCallback? = null): Boolean {
+        return prepareGesture(point,point,strokeStartTime,200,gestureResultCallback)
     }
 
     /**
@@ -38,8 +28,12 @@ class Gesture(private val accService: AccessibilityService) {
      * time the stroke should start. Must not be negative.
      * */
     fun scroll(from: Point, to: Point, scrollDuration: Long = 1000,strokeStartTime: Long = 0,
-               gestureResultCallback: AccessibilityService.GestureResultCallback =
-            object : AccessibilityService.GestureResultCallback() {}): Boolean{
+               gestureResultCallback: AccessibilityService.GestureResultCallback? = null): Boolean{
+        return prepareGesture(from, to, strokeStartTime, scrollDuration, gestureResultCallback)
+    }
+
+    private fun prepareGesture(from: Point, to: Point,strokeStartTime: Long,scrollDuration: Long,
+                               gestureResultCallback: AccessibilityService.GestureResultCallback?): Boolean {
         val builder = GestureDescription.Builder()
         val p = Path()
 
@@ -55,7 +49,7 @@ class Gesture(private val accService: AccessibilityService) {
     /**
      * perform the needed gesture  onto the screen
      */
-    private fun performGesture(gesture: GestureDescription,gestureResultCallback: AccessibilityService.GestureResultCallback): Boolean {
+    private fun performGesture(gesture: GestureDescription,gestureResultCallback: AccessibilityService.GestureResultCallback?): Boolean {
         return accService.dispatchGesture(gesture, gestureResultCallback, null)
     }
 

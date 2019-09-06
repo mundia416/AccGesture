@@ -6,28 +6,19 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.PixelFormat
 import android.os.Build
-import android.support.v4.content.LocalBroadcastManager
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
-import com.nosetrap.draglib.DraggableOverlayOnTouchListener
-import com.nosetrap.draglib.DraggableOverlayService
+import com.nosetrap.accgesturelib.util.ScreenUtil
+import com.nosetrap.draglib.DragOverlayService
+import com.nosetrap.draglib.DragTouchListener
 
-class OverlayService : DraggableOverlayService() {
-    var inflatedControlPanel: View? = null
-    var inflatedClick: View? = null
-    var inflatedScrollStart: View? = null
-    var inflatedScrollStop: View? = null
-
-    var controlPanelParams: WindowManager.LayoutParams? = null
-    var clickParams: WindowManager.LayoutParams? = null
-    var scrollParamsStart: WindowManager.LayoutParams? = null
-    var scrollParamsStop: WindowManager.LayoutParams? = null
-
-    var controlPanelDragTouch: DraggableOverlayOnTouchListener? = null
-    var clickDragTouch: DraggableOverlayOnTouchListener? = null
-    var scrollStartDragTouch: DraggableOverlayOnTouchListener? = null
-    var scrollStopDragTouch: DraggableOverlayOnTouchListener? = null
+class OverlayService : DragOverlayService() {
+    val controlPanelDragListener by lazy { createDragTouchListener(R.layout.control_panel)}
+    val clickDragListener by lazy { createDragTouchListener(R.layout.click_position)}
+    val scrollStartDragListener by lazy { createDragTouchListener(R.layout.scroll_start)}
+    val scrollStopDragListener by lazy { createDragTouchListener(R.layout.scroll_stop)}
 
     val repo = Repository.getInstance()
     var overlayAdded = false
@@ -35,86 +26,34 @@ class OverlayService : DraggableOverlayService() {
     lateinit var broadcastReceiver: BroadcastReceiver
 
     override fun code(intent: Intent?) {
-        inflatedControlPanel = layoutInflater?.inflate(R.layout.control_panel,null,false)
-        inflatedClick = layoutInflater?.inflate(R.layout.click_position,null,false)
-        inflatedScrollStart = layoutInflater?.inflate(R.layout.scroll_start,null,false)
-        inflatedScrollStop = layoutInflater?.inflate(R.layout.scroll_stop,null,false)
 
-        controlPanelParams = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                        or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                else WindowManager.LayoutParams.TYPE_SYSTEM_ERROR, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                PixelFormat.TRANSLUCENT)
+        scrollStopDragListener.layoutParams.y = 50
+        scrollStopDragListener.layoutParams.x = 50
+        clickDragListener.layoutParams.y = 50
+        clickDragListener.layoutParams.x = 50
 
-        clickParams = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                        or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                else WindowManager.LayoutParams.TYPE_SYSTEM_ERROR, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                PixelFormat.TRANSLUCENT)
-         scrollParamsStart = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
-                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                         or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                 else WindowManager.LayoutParams.TYPE_SYSTEM_ERROR, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                 PixelFormat.TRANSLUCENT)
-         scrollParamsStop = WindowManager.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
-                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                         or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                 else WindowManager.LayoutParams.TYPE_SYSTEM_ERROR, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                 PixelFormat.TRANSLUCENT)
+        scrollStartDragListener.layoutParams.y = 50
+        scrollStartDragListener.layoutParams.x = 50
 
-        scrollParamsStop?.y = 50
-        scrollParamsStop?.x = 50
-        clickParams?.y = 50
-        clickParams?.x = 50
+        controlPanelDragListener.findView(R.id.btnClick).setOnClickListener {
+            clickDragListener.view.visibility = View.GONE
+            scrollStopDragListener.view.visibility = View.GONE
+            scrollStartDragListener.view.visibility = View.GONE
 
-        scrollParamsStart?.y = 50
-        scrollParamsStart?.x = 50
+            repo.clickPosition = ScreenUtil.getLocationOnScreen(clickDragListener.view)
 
-        inflatedControlPanel?.layoutParams = controlPanelParams
-        inflatedClick?.layoutParams = clickParams
-        inflatedScrollStart?.layoutParams = scrollParamsStart
-        inflatedScrollStop?.layoutParams = scrollParamsStop
-
-        controlPanelDragTouch = DraggableOverlayOnTouchListener(inflatedControlPanel!!,controlPanelParams!!)
-        clickDragTouch = DraggableOverlayOnTouchListener(inflatedClick!!,clickParams!!)
-        scrollStartDragTouch = DraggableOverlayOnTouchListener(inflatedScrollStart!!,scrollParamsStart!!)
-        scrollStopDragTouch = DraggableOverlayOnTouchListener(inflatedScrollStop!!,scrollParamsStop!!)
-
-        val click = inflatedControlPanel?.findViewById<Button>(R.id.btnClick)
-        val scroll = inflatedControlPanel?.findViewById<Button>(R.id.btnScroll)
-
-        click?.setOnClickListener {
-            inflatedClick?.visibility = View.GONE
-            inflatedScrollStop?.visibility = View.GONE
-            inflatedScrollStart?.visibility = View.GONE
-
-            val outArray = IntArray(2)
-             inflatedClick?.getLocationOnScreen(outArray)
-            repo.clickPosition.x = outArray[0]
-            repo.clickPosition.y = outArray[1]
             val serviceIntent = Intent(this,AccService::class.java)
             serviceIntent.putExtra(AccService.EXTRA_ACTION,AccService.ACTION_CLICK)
             startService(serviceIntent)
         }
 
-        scroll?.setOnClickListener {
-            inflatedClick?.visibility = View.GONE
-            inflatedScrollStop?.visibility = View.GONE
-            inflatedScrollStart?.visibility = View.GONE
+        controlPanelDragListener.findView(R.id.btnScroll).setOnClickListener {
+            clickDragListener.view.visibility = View.GONE
+            scrollStopDragListener.view.visibility = View.GONE
+            scrollStartDragListener.view.visibility = View.GONE
 
-            val startOutArray = IntArray(2)
-            inflatedScrollStart?.getLocationOnScreen(startOutArray)
-            repo.scrollStart.x = startOutArray[0]
-            repo.scrollStart.y = startOutArray[1]
-
-            val stopOutArray = IntArray(2)
-            inflatedScrollStop?.getLocationOnScreen(stopOutArray)
-            repo.scrollStop.x = stopOutArray[0]
-            repo.scrollStop.y = stopOutArray[1]
+            repo.scrollStart = ScreenUtil.getLocationOnScreen(scrollStartDragListener.view)
+            repo.scrollStop = ScreenUtil.getLocationOnScreen(scrollStopDragListener.view)
 
             val serviceIntent = Intent(this,AccService::class.java)
             serviceIntent.putExtra(AccService.EXTRA_ACTION,AccService.ACTION_SCROLL)
@@ -123,21 +62,21 @@ class OverlayService : DraggableOverlayService() {
 
         try {
             if(!overlayAdded) {
-                windowManager?.addView(inflatedControlPanel, controlPanelParams)
-                windowManager?.addView(inflatedClick, clickParams)
-                windowManager?.addView(inflatedScrollStart, scrollParamsStart)
-                windowManager?.addView(inflatedScrollStop, scrollParamsStop)
+                addViewToWindow(controlPanelDragListener)
+                addViewToWindow(clickDragListener)
+                addViewToWindow(scrollStartDragListener)
+                addViewToWindow(scrollStopDragListener)
             }
             overlayAdded = true
         }catch (e:Exception){
-
+            e.printStackTrace()
         }
 
         broadcastReceiver = object : BroadcastReceiver(){
             override fun onReceive(context: Context?, intent: Intent?) {
-                inflatedClick?.visibility = View.VISIBLE
-                inflatedScrollStop?.visibility = View.VISIBLE
-                inflatedScrollStart?.visibility = View.VISIBLE
+                clickDragListener.view.visibility = View.VISIBLE
+                scrollStopDragListener.view.visibility = View.VISIBLE
+                scrollStartDragListener.view.visibility = View.VISIBLE
             }
 
         }
@@ -146,19 +85,7 @@ class OverlayService : DraggableOverlayService() {
     }
 
     override fun onDestroy() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
+        androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(this).unregisterReceiver(broadcastReceiver)
         super.onDestroy()
-    }
-
-    override fun registerDraggableTouchListener() {
-        registerOnTouchListener(controlPanelDragTouch!!)
-        registerOnTouchListener(clickDragTouch!!)
-        registerOnTouchListener(scrollStartDragTouch!!)
-        registerOnTouchListener(scrollStopDragTouch!!)
-
-        inflatedControlPanel?.setOnTouchListener(controlPanelDragTouch)
-        inflatedClick?.setOnTouchListener(clickDragTouch)
-        inflatedScrollStop?.setOnTouchListener(scrollStopDragTouch)
-        inflatedScrollStart?.setOnTouchListener(scrollStartDragTouch)
     }
 }

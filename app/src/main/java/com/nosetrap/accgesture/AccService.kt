@@ -5,7 +5,7 @@ import android.accessibilityservice.GestureDescription
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
-import android.support.v4.content.LocalBroadcastManager
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
@@ -33,12 +33,12 @@ class AccService : AccessibilityService() {
         when(action){
             ACTION_CLICK ->{
               //   repo.clickPosition.y += 2
-                val gesturePerformed = gesture.click(repo.clickPosition,gestureResultCallback)
+                val gesturePerformed = gesture.click(repo.clickPosition,10,gestureResultCallback)
                 print(gesturePerformed)
             }
             ACTION_SCROLL ->{
                 //repo.scrollStart.y += 2
-                gesture.scroll(repo.scrollStart,repo.scrollStop,1000,gestureResultCallback)
+                gesture.scroll(repo.scrollStart,repo.scrollStop,1000,0,gestureResultCallback)
             }
         }
 
