@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.graphics.Point
+import kotlinx.coroutines.*
+import java.util.concurrent.TimeUnit
 
 /**
  * class used to perform gestures
@@ -20,6 +22,28 @@ class Gesture(private val accService: AccessibilityService) {
     fun click(point: Point,strokeStartTime: Long = 10,
               gestureResultCallback: AccessibilityService.GestureResultCallback? = null): Boolean {
         return prepareGesture(point,point,strokeStartTime,200,gestureResultCallback)
+    }
+
+    fun hold(point: Point, strokeStartTime: Long = 10, holdDuration: Long = TimeUnit.SECONDS.toMillis(2),
+             gestureResultCallback: AccessibilityService.GestureResultCallback? = null): Boolean{
+        return prepareGesture(point,point,strokeStartTime,holdDuration,gestureResultCallback)
+    }
+
+    fun doubleTap(point: Point,strokeStartTime: Long = 10,
+                  gestureResultCallback: AccessibilityService.GestureResultCallback? = null){
+        GlobalScope.launch {
+            withContext(Dispatchers.IO){
+                performDoubleTap(point, strokeStartTime, gestureResultCallback)
+            }
+        }
+    }
+
+    private  suspend fun  performDoubleTap(point: Point,strokeStartTime: Long = 10,
+                                           gestureResultCallback: AccessibilityService.GestureResultCallback? = null){
+        click(point, strokeStartTime, gestureResultCallback)
+        delay(TimeUnit.SECONDS.toMillis(1))
+        click(point, strokeStartTime, gestureResultCallback)
+
     }
 
     /**

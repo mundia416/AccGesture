@@ -33,7 +33,7 @@ class AccService : AccessibilityService() {
         when(action){
             ACTION_CLICK ->{
               //   repo.clickPosition.y += 2
-                val gesturePerformed = gesture.click(repo.clickPosition,10,gestureResultCallback)
+                val gesturePerformed = gesture.doubleTap(repo.clickPosition,10,gestureResultCallback)
                 print(gesturePerformed)
             }
             ACTION_SCROLL ->{
