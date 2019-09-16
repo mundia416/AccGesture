@@ -29,19 +29,19 @@ class Gesture(private val accService: AccessibilityService) {
         return prepareGesture(point,point,strokeStartTime,holdDuration,gestureResultCallback)
     }
 
-    fun doubleTap(point: Point,strokeStartTime: Long = 10,
+    fun doubleTap(point: Point,clickInterval: Long = TimeUnit.SECONDS.toMillis(1),strokeStartTime: Long = 10,
                   gestureResultCallback: AccessibilityService.GestureResultCallback? = null){
         GlobalScope.launch {
             withContext(Dispatchers.IO){
-                performDoubleTap(point, strokeStartTime, gestureResultCallback)
+                performDoubleTap(point,clickInterval, strokeStartTime, gestureResultCallback)
             }
         }
     }
 
-    private  suspend fun  performDoubleTap(point: Point,strokeStartTime: Long = 10,
+    private  suspend fun  performDoubleTap(point: Point,clickInterval: Long,strokeStartTime: Long = 10,
                                            gestureResultCallback: AccessibilityService.GestureResultCallback? = null){
         click(point, strokeStartTime, gestureResultCallback)
-        delay(TimeUnit.SECONDS.toMillis(1))
+        delay(clickInterval)
         click(point, strokeStartTime, gestureResultCallback)
 
     }
